@@ -69,9 +69,7 @@ documentrodeo/
 │   ├── 05_streamlit/       # Streamlit deployment
 │   └── 99_cleanup/         # Teardown scripts
 ├── diagrams/               # Architecture diagrams
-├── docs/                   # Documentation
-└── config/
-    └── env.example         # Environment template (for Snow CLI)
+└── docs/                   # Documentation
 ```
 
 ---

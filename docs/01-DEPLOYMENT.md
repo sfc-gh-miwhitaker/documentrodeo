@@ -9,7 +9,7 @@
 - Snowflake account with ACCOUNTADMIN role (or role with CREATE DATABASE, WAREHOUSE privileges)
 - Access to Cortex AI functions (CORTEX_USER role)
 
-## Primary Deployment Method (Recommended)
+## Deployment
 
 **Copy/paste into Snowsight - that's it!**
 
@@ -29,24 +29,6 @@
 | Stage | `@DOC_QA_STAGE` | Document storage |
 | Table | `UPLOADS` | Upload metadata |
 | Streamlit | `DOC_QA_APP` | The application |
-
-## Alternative: Snow CLI Deployment
-
-If you have Snow CLI installed:
-
-```bash
-# Clone the repository
-git clone https://github.com/sfc-gh-miwhitaker/documentrodeo.git
-cd documentrodeo
-
-# Set environment variables (see config/env.example)
-export SNOWFLAKE_ACCOUNT=your_account
-export SNOWFLAKE_USER=your_user
-# ... other vars
-
-# Deploy using Snow CLI
-snow sql -f deploy_all.sql
-```
 
 ## Verification
 
@@ -99,4 +81,3 @@ SHOW STREAMLITS IN SCHEMA SNOWFLAKE_EXAMPLE.DOC_QA;
 | Create schema/stage/table | ~5 seconds |
 | Deploy Streamlit | ~30-60 seconds |
 | **Total** | **~1-2 minutes** |
-
