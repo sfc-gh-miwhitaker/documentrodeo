@@ -17,7 +17,7 @@
 
 ## What This Demo Shows
 
-Upload a PDF or text document to Snowflake, then ask questions about it - all within a single Streamlit in Snowflake app. **Zero external dependencies.**
+Upload a text document, then ask questions about it - all within a single Streamlit in Snowflake app. **Zero external dependencies.**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -75,7 +75,7 @@ documentrodeo/
 
 ## How It Works
 
-1. **Upload**: User uploads TXT/PDF via Streamlit file uploader
+1. **Upload**: User uploads TXT file via Streamlit file uploader
 2. **Extract**: Text is extracted directly from the file in memory
 3. **Question**: User enters a question about the document
 4. **Answer**: `CORTEX.COMPLETE` generates answer using document text as context
