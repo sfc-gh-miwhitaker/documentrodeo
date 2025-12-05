@@ -32,7 +32,6 @@ Upload a PDF or text document to Snowflake, then ask questions about it - all wi
 
 | Feature | Purpose |
 |---------|---------|
-| `SNOWFLAKE.CORTEX.PARSE_DOCUMENT` | Extract text from PDF/DOCX files |
 | `SNOWFLAKE.CORTEX.COMPLETE` | Answer questions using LLM (llama3.1-70b) |
 
 ---
@@ -76,11 +75,10 @@ documentrodeo/
 
 ## How It Works
 
-1. **Upload**: User uploads PDF/TXT via Streamlit file uploader
-2. **Stage**: File is written to internal stage `@DOC_QA_STAGE`
-3. **Parse**: `PARSE_DOCUMENT` extracts text from the document
-4. **Question**: User enters a question about the document
-5. **Answer**: `CORTEX.COMPLETE` generates answer using document as context
+1. **Upload**: User uploads TXT/PDF via Streamlit file uploader
+2. **Extract**: Text is extracted directly from the file in memory
+3. **Question**: User enters a question about the document
+4. **Answer**: `CORTEX.COMPLETE` generates answer using document text as context
 
 ---
 
@@ -90,8 +88,6 @@ documentrodeo/
 |--------|------|---------|
 | `SFE_DOC_QA_WH` | Warehouse (X-SMALL) | Query execution |
 | `SNOWFLAKE_EXAMPLE.DOC_QA` | Schema | Project namespace |
-| `DOC_QA_STAGE` | Internal Stage | Document storage |
-| `UPLOADS` | Table | Upload metadata tracking |
 | `DOC_QA_APP` | Streamlit | The application |
 
 ---
@@ -103,9 +99,6 @@ documentrodeo/
 **Manual:**
 ```sql
 DROP STREAMLIT IF EXISTS SNOWFLAKE_EXAMPLE.DOC_QA.DOC_QA_APP;
-REMOVE @SNOWFLAKE_EXAMPLE.DOC_QA.DOC_QA_STAGE PATTERN='.*';
-DROP STAGE IF EXISTS SNOWFLAKE_EXAMPLE.DOC_QA.DOC_QA_STAGE;
-DROP TABLE IF EXISTS SNOWFLAKE_EXAMPLE.DOC_QA.UPLOADS;
 DROP SCHEMA IF EXISTS SNOWFLAKE_EXAMPLE.DOC_QA CASCADE;
 DROP WAREHOUSE IF EXISTS SFE_DOC_QA_WH;
 ```
@@ -117,9 +110,8 @@ DROP WAREHOUSE IF EXISTS SFE_DOC_QA_WH;
 | Resource | Size/Type | Est. Cost | Notes |
 |----------|-----------|-----------|-------|
 | Warehouse | X-SMALL | ~$0.08/5min | Only runs during queries |
-| PARSE_DOCUMENT | Per-page | ~$0.01/page | Text extraction |
 | CORTEX.COMPLETE | Per-call | ~$0.01/call | LLM inference |
-| **Total Demo** | ~5 min | **< $0.50** | Minimal usage |
+| **Total Demo** | ~5 min | **< $0.25** | Minimal usage |
 
 **Edition:** Standard ($2/credit) - No enterprise features required
 
