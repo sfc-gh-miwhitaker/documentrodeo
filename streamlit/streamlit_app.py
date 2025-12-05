@@ -30,20 +30,15 @@ def extract_text_from_file(uploaded_file):
     
     if file_type == "txt":
         return uploaded_file.getvalue().decode("utf-8")
-    elif file_type == "pdf":
-        # For PDF, we'll use a simple extraction
-        # Note: Full PDF parsing would require PyPDF2 which may not be available
-        try:
-            content = uploaded_file.getvalue()
-            # Try to extract readable text from PDF bytes
-            text = content.decode("latin-1", errors="ignore")
-            # Filter to printable characters
-            text = "".join(c if c.isprintable() or c.isspace() else " " for c in text)
-            return text
-        except Exception:
-            return "[PDF parsing limited - upload TXT for best results]"
     else:
-        return uploaded_file.getvalue().decode("utf-8", errors="ignore")
+        # Try common encodings
+        content = uploaded_file.getvalue()
+        for encoding in ["utf-8", "latin-1", "cp1252"]:
+            try:
+                return content.decode(encoding)
+            except (UnicodeDecodeError, AttributeError):
+                continue
+        return content.decode("utf-8", errors="ignore")
 
 
 def answer_question(question, document_text):
@@ -89,9 +84,9 @@ with col1:
     st.header("📤 Upload Document")
     
     uploaded_file = st.file_uploader(
-        "Choose a file",
-        type=["txt", "pdf"],
-        help="Supported formats: TXT (best), PDF (basic)"
+        "Choose a TXT file",
+        type=["txt"],
+        help="Upload a plain text file (.txt)"
     )
     
     if uploaded_file:
