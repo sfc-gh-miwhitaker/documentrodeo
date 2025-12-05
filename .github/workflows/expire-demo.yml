@@ -1,0 +1,77 @@
+# Demo Expiration Workflow
+# Author: SE Community
+# Purpose: Auto-archive repository after expiration date
+#
+# This workflow runs daily and checks if the demo has expired.
+# After expiration, it archives the repository and makes it private.
+
+name: Check Demo Expiration
+
+on:
+  schedule:
+    # Run daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+env:
+  EXPIRATION_DATE: '2026-01-04'
+
+jobs:
+  check-expiration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if demo has expired
+        id: check
+        run: |
+          CURRENT_DATE=$(date +%Y-%m-%d)
+          if [[ "$CURRENT_DATE" > "$EXPIRATION_DATE" ]]; then
+            echo "expired=true" >> $GITHUB_OUTPUT
+            echo "Demo has expired (current: $CURRENT_DATE, expiration: $EXPIRATION_DATE)"
+          else
+            echo "expired=false" >> $GITHUB_OUTPUT
+            echo "Demo is still active (current: $CURRENT_DATE, expiration: $EXPIRATION_DATE)"
+          fi
+
+      - name: Archive repository
+        if: steps.check.outputs.expired == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Archive the repository
+            await github.rest.repos.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              archived: true
+            });
+            console.log('Repository has been archived due to expiration.');
+
+      - name: Create expiration notice issue
+        if: steps.check.outputs.expired == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Demo Expired - Repository Archived',
+              body: `## Demo Expiration Notice
+              
+              This demonstration repository has expired as of **${{ env.EXPIRATION_DATE }}**.
+              
+              The repository has been archived and is now read-only.
+              
+              ### Why?
+              Demo projects are time-limited to ensure users always have access to 
+              current Snowflake syntax and best practices. Stale demos can cause 
+              confusion and compatibility issues.
+              
+              ### Need an Updated Version?
+              Contact the SE Community team for an updated version of this demo.
+              
+              ---
+              *This issue was automatically created by the expiration workflow.*`
+            });
+

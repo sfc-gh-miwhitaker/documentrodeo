@@ -1,0 +1,11 @@
+# Environment configuration for Document Rodeo Streamlit app
+# Author: SE Community
+# Expires: 2026-01-04
+
+name: sf_env
+channels:
+  - snowflake
+dependencies:
+  - streamlit=1.35.0
+  - snowflake-snowpark-python
+
