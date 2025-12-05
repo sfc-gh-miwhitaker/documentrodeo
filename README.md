@@ -17,7 +17,7 @@
 
 ## What This Demo Shows
 
-Upload a text document, then ask questions about it - all within a single Streamlit in Snowflake app. **Zero external dependencies.**
+Upload a PDF, TXT, or DOCX document, then ask questions about it - all within a single Streamlit in Snowflake app. **100% Snowflake native.**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -32,6 +32,7 @@ Upload a text document, then ask questions about it - all within a single Stream
 
 | Feature | Purpose |
 |---------|---------|
+| `AI_PARSE_DOCUMENT` | Extract text from PDF/DOCX/TXT files |
 | `SNOWFLAKE.CORTEX.COMPLETE` | Answer questions using LLM (llama3.1-70b) |
 
 ---
@@ -75,10 +76,11 @@ documentrodeo/
 
 ## How It Works
 
-1. **Upload**: User uploads TXT file via Streamlit file uploader
-2. **Extract**: Text is extracted directly from the file in memory
-3. **Question**: User enters a question about the document
-4. **Answer**: `CORTEX.COMPLETE` generates answer using document text as context
+1. **Upload**: User uploads PDF/TXT/DOCX via Streamlit file uploader
+2. **Stage**: File is uploaded to internal stage `@DOC_QA_STAGE`
+3. **Parse**: `AI_PARSE_DOCUMENT` extracts text (OCR for scanned PDFs)
+4. **Question**: User enters a question about the document
+5. **Answer**: `CORTEX.COMPLETE` generates answer using document text as context
 
 ---
 
@@ -88,6 +90,7 @@ documentrodeo/
 |--------|------|---------|
 | `SFE_DOC_QA_WH` | Warehouse (X-SMALL) | Query execution |
 | `SNOWFLAKE_EXAMPLE.DOC_QA` | Schema | Project namespace |
+| `DOC_QA_STAGE` | Internal Stage | Document storage |
 | `DOC_QA_APP` | Streamlit | The application |
 
 ---
@@ -110,8 +113,9 @@ DROP WAREHOUSE IF EXISTS SFE_DOC_QA_WH;
 | Resource | Size/Type | Est. Cost | Notes |
 |----------|-----------|-----------|-------|
 | Warehouse | X-SMALL | ~$0.08/5min | Only runs during queries |
+| AI_PARSE_DOCUMENT | Per-page | ~$0.01/page | OCR text extraction |
 | CORTEX.COMPLETE | Per-call | ~$0.01/call | LLM inference |
-| **Total Demo** | ~5 min | **< $0.25** | Minimal usage |
+| **Total Demo** | ~5 min | **< $0.50** | Minimal usage |
 
 **Edition:** Standard ($2/credit) - No enterprise features required
 

@@ -1,8 +1,8 @@
 """
-Document Rodeo - Minimal Document Q&A
-=====================================
-A simple Streamlit in Snowflake app that answers questions about uploaded documents
-using Cortex AI (COMPLETE function).
+Document Rodeo - Document Q&A with AI_PARSE_DOCUMENT
+====================================================
+Upload PDF/TXT/DOCX documents to a Snowflake stage, extract text with 
+AI_PARSE_DOCUMENT, and answer questions using CORTEX.COMPLETE.
 
 Author: SE Community
 Expires: 2026-01-04
@@ -10,6 +10,9 @@ Expires: 2026-01-04
 
 import streamlit as st
 from snowflake.snowpark.context import get_active_session
+import tempfile
+import os
+import time
 
 # Page Configuration
 st.set_page_config(
@@ -18,27 +21,53 @@ st.set_page_config(
     layout="wide"
 )
 
-# Session
+# Session & Constants
 session = get_active_session()
-
+STAGE_PATH = "@SNOWFLAKE_EXAMPLE.DOC_QA.DOC_QA_STAGE"
 MAX_CONTEXT_CHARS = 30000
 
 
-def extract_text_from_file(uploaded_file):
-    """Extract text content from uploaded file."""
-    file_type = uploaded_file.name.split(".")[-1].lower()
+def upload_to_stage(uploaded_file):
+    """Upload file to Snowflake stage."""
+    filename = uploaded_file.name
+    # Add timestamp to avoid collisions
+    ts = int(time.time())
+    staged_name = f"{ts}_{filename}"
     
-    if file_type == "txt":
-        return uploaded_file.getvalue().decode("utf-8")
-    else:
-        # Try common encodings
-        content = uploaded_file.getvalue()
-        for encoding in ["utf-8", "latin-1", "cp1252"]:
-            try:
-                return content.decode(encoding)
-            except (UnicodeDecodeError, AttributeError):
-                continue
-        return content.decode("utf-8", errors="ignore")
+    # Write to temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as tmp:
+        tmp.write(uploaded_file.getvalue())
+        tmp_path = tmp.name
+    
+    try:
+        # Upload to stage
+        session.file.put(
+            tmp_path,
+            STAGE_PATH,
+            auto_compress=False,
+            overwrite=True
+        )
+        # The file gets uploaded with the temp filename, extract just the name part
+        staged_filename = os.path.basename(tmp_path)
+        return staged_filename
+    finally:
+        os.unlink(tmp_path)
+
+
+def parse_document(staged_filename):
+    """Extract text from staged document using AI_PARSE_DOCUMENT."""
+    query = f"""
+        SELECT AI_PARSE_DOCUMENT(
+            '{STAGE_PATH}',
+            '{staged_filename}',
+            {{'mode': 'OCR'}}
+        ):content::STRING AS extracted_text
+    """
+    result = session.sql(query).collect()
+    
+    if result and len(result) > 0:
+        return result[0]["EXTRACTED_TEXT"] or ""
+    return ""
 
 
 def answer_question(question, document_text):
@@ -56,7 +85,6 @@ QUESTION: {question}
 
 ANSWER:"""
 
-    # Escape single quotes for SQL
     safe_prompt = prompt.replace("'", "''")
     
     query = f"""
@@ -77,29 +105,42 @@ st.title("📄 Document Rodeo")
 st.markdown("*Upload a document and ask questions about it*")
 st.markdown("---")
 
-# Two columns
 col1, col2 = st.columns([1, 1])
 
 with col1:
     st.header("📤 Upload Document")
     
     uploaded_file = st.file_uploader(
-        "Choose a TXT file",
-        type=["txt"],
-        help="Upload a plain text file (.txt)"
+        "Choose a file",
+        type=["pdf", "txt", "docx"],
+        help="Supported: PDF, TXT, DOCX (max 200MB)"
     )
     
     if uploaded_file:
         st.success(f"📄 **{uploaded_file.name}** ({uploaded_file.size:,} bytes)")
         
-        if st.button("🔍 Extract Text", type="primary"):
-            with st.spinner("Extracting text..."):
-                text = extract_text_from_file(uploaded_file)
-                st.session_state["document_text"] = text
-                st.session_state["filename"] = uploaded_file.name
-                st.success(f"✅ Extracted {len(text):,} characters")
+        if st.button("🔍 Upload & Parse", type="primary"):
+            with st.spinner("Uploading to stage..."):
+                try:
+                    staged_filename = upload_to_stage(uploaded_file)
+                    st.session_state["staged_filename"] = staged_filename
+                    st.info(f"Staged as: {staged_filename}")
+                except Exception as e:
+                    st.error(f"Upload failed: {str(e)}")
+                    st.stop()
+            
+            with st.spinner("Parsing with AI_PARSE_DOCUMENT..."):
+                try:
+                    text = parse_document(staged_filename)
+                    if text:
+                        st.session_state["document_text"] = text
+                        st.session_state["filename"] = uploaded_file.name
+                        st.success(f"✅ Extracted {len(text):,} characters")
+                    else:
+                        st.warning("No text extracted - file may be empty or unsupported")
+                except Exception as e:
+                    st.error(f"Parse failed: {str(e)}")
         
-        # Show preview
         if st.session_state.get("document_text"):
             with st.expander("📝 Document Preview", expanded=False):
                 preview = st.session_state["document_text"][:3000]
@@ -131,8 +172,8 @@ with col2:
             st.markdown("---")
             st.caption(f"Q: *{st.session_state.get('last_question', '')}*")
     else:
-        st.info("⬅️ Upload a document and extract text first")
+        st.info("⬅️ Upload a document and parse it first")
 
 # Footer
 st.markdown("---")
-st.caption("Powered by **Snowflake Cortex AI** (llama3.1-70b) | Demo expires: 2026-01-04")
+st.caption("**Cortex AI:** AI_PARSE_DOCUMENT + COMPLETE (llama3.1-70b) | Expires: 2026-01-04")

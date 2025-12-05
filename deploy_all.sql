@@ -18,13 +18,13 @@ DEPLOYMENT INSTRUCTIONS:
 WHAT THIS CREATES:
 - Warehouse: SFE_DOC_QA_WH (X-SMALL)
 - Schema: SNOWFLAKE_EXAMPLE.DOC_QA
+- Stage: DOC_QA_STAGE (for document uploads)
 - Git Repo: SFE_DOC_QA_REPO
 - Streamlit: DOC_QA_APP
 
 ================================================================================
 */
 
--- Set role
 USE ROLE ACCOUNTADMIN;
 
 -- ============================================================================
@@ -49,6 +49,13 @@ CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.DOC_QA
     COMMENT = 'DEMO: Document Rodeo | Author: SE Community | Expires: 2026-01-04';
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.DOC_QA;
+
+-- ============================================================================
+-- STAGE (for document uploads)
+-- ============================================================================
+CREATE STAGE IF NOT EXISTS DOC_QA_STAGE
+    DIRECTORY = (ENABLE = TRUE)
+    COMMENT = 'DEMO: Document storage for AI parsing | Author: SE Community | Expires: 2026-01-04';
 
 -- ============================================================================
 -- GIT INTEGRATION
@@ -77,11 +84,12 @@ CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.DOC_QA.DOC_QA_APP
     MAIN_FILE = 'streamlit_app.py'
     QUERY_WAREHOUSE = SFE_DOC_QA_WH
     TITLE = 'Document Rodeo'
-    COMMENT = 'DEMO: Minimal Doc Q&A with Cortex AI | Author: SE Community | Expires: 2026-01-04';
+    COMMENT = 'DEMO: Doc Q&A with AI_PARSE_DOCUMENT | Author: SE Community | Expires: 2026-01-04';
 
 -- ============================================================================
 -- VERIFICATION
 -- ============================================================================
+SHOW STAGES IN SCHEMA SNOWFLAKE_EXAMPLE.DOC_QA;
 SHOW STREAMLITS LIKE 'DOC_QA_APP' IN SCHEMA SNOWFLAKE_EXAMPLE.DOC_QA;
 
 SELECT '✅ Deployment complete! Go to Projects → Streamlit → DOC_QA_APP' AS STATUS;
